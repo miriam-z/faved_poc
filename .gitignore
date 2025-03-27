@@ -1,0 +1,20 @@
+# Python virtualenv
+.venv/
+__pycache__/
+*.pyc
+
+# Editor & system files
+.DS_Store
+.vscode/
+.idea/
+
+# Temp files
+temp_*.png
+*.log
+
+# Secrets
+.env
+
+# Large or intermediate outputs
+results/
+summaries/

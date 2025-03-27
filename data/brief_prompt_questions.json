@@ -1,0 +1,162 @@
+[
+  {
+    "question": "Does the script clearly introduce Milanote and its benefits for creative projects?",
+    "type": "script"
+  },
+  {
+    "question": "Is the call to action in the script compelling and clear, encouraging viewers to sign up for Milanote?",
+    "type": "script"
+  },
+  {
+    "question": "Does the script avoid prohibited topics such as explicit themes, polarizing political topics, personal attacks, or unverified theories?",
+    "type": "script"
+  },
+  {
+    "question": "Is the script free from YouTube planning specifics and irrelevant content, focusing instead on Milanote's features?",
+    "type": "script"
+  },
+  {
+    "question": "Does the script effectively showcase how Milanote aids in the creative process with specific examples or use cases?",
+    "type": "script"
+  },
+  {
+    "question": "Is the script segmented and paced in a way that aligns with the video's visual content for a cohesive narrative?",
+    "type": "script"
+  },
+  {
+    "question": "Does the script highlight Milanote's collaboration features and how they add value to creative projects?",
+    "type": "script"
+  },
+  {
+    "question": "Are Milanote's varied functionalities explained in a manner that is easy to understand for new users?",
+    "type": "script"
+  },
+  {
+    "question": "Does the script include a variety of Milanote's use cases to showcase its flexibility across different creative fields?",
+    "type": "script"
+  },
+  {
+    "question": "Is the script personalized to reflect the influencer's genuine experience and use of Milanote, making the content more relatable?",
+    "type": "script"
+  },
+  {
+    "question": "Does the video demonstrate clear, interactive use of Milanote's interface and features?",
+    "type": "video"
+  },
+  {
+    "question": "Is Milanote's logo correctly displayed and pronounced in the video, adhering to brand guidelines?",
+    "type": "video"
+  },
+  {
+    "question": "Are Milanote boards fully visible without distracting effects, showcasing their content and organization?",
+    "type": "video"
+  },
+  {
+    "question": "Does the video avoid using external clips from Milanote, instead focusing on the influencer's original content?",
+    "type": "video"
+  },
+  {
+    "question": "Is the video paced appropriately to allow viewers to understand how Milanote works without rushing through features?",
+    "type": "video"
+  },
+  {
+    "question": "Does the video contain a unique signup link in the description and a pinned comment, as required?",
+    "type": "video"
+  },
+  {
+    "question": "Are the Milanote boards in the video well-designed, visually engaging, and include a variety of elements?",
+    "type": "video"
+  },
+  {
+    "question": "Does the video adhere to brand safety guidelines by avoiding explicit content, polarizing topics, and unverified facts?",
+    "type": "video"
+  },
+  {
+    "question": "Is there a clear call to action in the video, encouraging viewers to sign up for Milanote?",
+    "type": "video"
+  },
+  {
+    "question": "Does the video content seamlessly integrate Milanote, adding value without disrupting the narrative?",
+    "type": "video"
+  },
+  {
+    "question": "Are the Milanote boards shared visually appealing and clearly demonstrate the tool's utility in organizing creative projects?",
+    "type": "image"
+  },
+  {
+    "question": "Do the boards avoid empty cards, irrelevant content, and YouTube-specific references, focusing instead on creative project planning?",
+    "type": "image"
+  },
+  {
+    "question": "Do the visual submissions contain a variety of elements (notes, images, links) that showcase Milanote's capabilities?",
+    "type": "image"
+  },
+  {
+    "question": "Are the boards goal-oriented with clear titles, aligning with the project's theme and objectives?",
+    "type": "image"
+  },
+  {
+    "question": "Do the images or boards submitted include Milanote's animated logo at the start, adhering to brand guidelines?",
+    "type": "image"
+  },
+  {
+    "question": "Are the visual elements free from distracting effects, ensuring the focus remains on Milanote's features?",
+    "type": "image"
+  },
+  {
+    "question": "Do the submissions showcase a seamless integration of Milanote into the influencer's creative process?",
+    "type": "image"
+  },
+  {
+    "question": "Are the visual submissions brand safe, avoiding content that could be considered explicit or polarizing?",
+    "type": "image"
+  },
+  {
+    "question": "Do the visuals demonstrate effective use of Milanote, including board interaction and organization, for intuitive understanding?",
+    "type": "image"
+  },
+  {
+    "question": "Do the visual submissions effectively display Milanote's features and ease of use through clear, engaging presentations?",
+    "type": "image"
+  },
+  {
+    "question": "Does the submission clearly demonstrate how Milanote can be integrated into various creative processes?",
+    "type": "general"
+  },
+  {
+    "question": "Is the content aligned with Milanote's brand safety guidelines, avoiding prohibited themes and content?",
+    "type": "general"
+  },
+  {
+    "question": "Does the submission showcase a unique and compelling use case for Milanote, differentiating it from other tools?",
+    "type": "general"
+  },
+  {
+    "question": "Is there a clear and compelling call to action across all submission types, encouraging viewers to sign up for Milanote?",
+    "type": "general"
+  },
+  {
+    "question": "Does the submission include all necessary post-video requirements, such as unique signup links and correct tagging?",
+    "type": "general"
+  },
+  {
+    "question": "Is Milanote presented as a flexible and versatile tool across all types of submissions, suitable for various creative fields?",
+    "type": "general"
+  },
+  {
+    "question": "Do the submissions provide a clear introduction to Milanote, its features, and benefits for the target audience?",
+    "type": "general"
+  },
+  {
+    "question": "Are the submissions free from external clips or references that could distract from the original content?",
+    "type": "general"
+  },
+  {
+    "question": "Do all types of submissions adhere to technical guidelines, such as clear visibility and correct pronunciation of Milanote?",
+    "type": "general"
+  },
+  {
+    "question": "Do the submissions authentically integrate Milanote, showcasing genuine use and benefits for creative projects?",
+    "type": "general"
+  }
+]

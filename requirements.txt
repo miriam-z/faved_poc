@@ -1,0 +1,17 @@
+numpy==1.26.4
+openai==1.68.2
+pillow==11.1.0
+pinecone==6.0.2
+playwright==1.51.0
+python-dotenv==1.0.1
+pytube==15.0.0
+regex==2024.11.6
+requests==2.32.3
+tiktoken==0.9.0
+tokenizers==0.21.1
+torch==2.6.0
+torchvision==0.21.0
+tqdm==4.67.1
+transformers==4.50.2
+typer==0.15.2
+youtube-transcript-api==1.0.3
