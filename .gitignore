@@ -16,5 +16,16 @@ temp_*.png
 .env
 
 # Large or intermediate outputs
-results/
-summaries/
+data/results/
+data/summaries/
+
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Coverage and testing
+.coverage
+htmlcov/
+.pytest_cache/

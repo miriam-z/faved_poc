@@ -15,3 +15,5 @@ tqdm==4.67.1
 transformers==4.50.2
 typer==0.15.2
 youtube-transcript-api==1.0.3
+fastapi==0.115.12
+uvicorn==0.34.0
