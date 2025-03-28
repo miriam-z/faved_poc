@@ -1,176 +1,258 @@
-## Faved POC - Influencer Submission Evaluator
+# Faved POC - Influencer Submission Evaluator
 
-A Python-based tool for evaluating influencer submissions against brand briefs using OpenAI's GPT-4 and vision models. The system supports multiple types of submissions including text scripts, images, and videos.
+A modern web application for evaluating influencer submissions against brand briefs using AI. The system provides instant feedback on text scripts, images, and YouTube videos using OpenAI's GPT-4 and CLIP models.
 
-### Features
+## Core Features
 
-- **Multi-format Support**: Evaluates different types of submissions:
-  - Text scripts
-  - Images (Milanote boards)
-  - YouTube videos
-- **Brief Summarization**: Automatically generates concise summaries of brand briefs
-- **Prompt Generation**: Creates evaluation questions based on brief content
-- **Vector Search**: Uses Pinecone for semantic search to match submissions with relevant briefs
-- **Structured Output**: Provides detailed feedback in JSON format
-- **CLIP Integration**: Uses OpenAI's CLIP model for image understanding
-- **YouTube Integration**: Automatically extracts and processes video transcripts
+- **Modern Web Interface**: Clean, responsive UI built with Next.js and styled-components
+- **Real-time Evaluation**: Instant feedback with engaging loading states and clear results display
+- **Multi-format Support**:
+  - Text scripts and content
+  - Images from Milanote boards
+  - YouTube videos with automatic transcript analysis
+- **AI-Powered Analysis**:
+  - GPT-4 for detailed content evaluation
+  - CLIP for image understanding
+  - Semantic search for brief matching
+- **Vector Database**: Pinecone for efficient content matching and retrieval
 
-### How It Works
+## Tech Stack
 
-The system uses a single Pinecone index (`influencer-submission`) with different namespaces to organize content:
+- **Frontend**: Next.js, TypeScript, styled-components
+- **Backend**: FastAPI, Python 3.8+
+- **AI/ML**: OpenAI GPT-4, CLIP, Embeddings
+- **Database**: Pinecone Vector Database
+- **APIs**: OpenAI, YouTube Transcript API
 
-- `brief`: Stores brief embeddings generated using OpenAI's text-embedding model
-- `text-submission`: Stores text submission embeddings
-- `image-submission`: Stores image embeddings (generated using CLIP, padded to match dimensions)
-- `video-submission`: Stores video transcript embeddings
-
-When evaluating a submission, it:
-
-1. Generates the appropriate embedding for the submission
-2. Stores it in its type-specific namespace
-3. Queries the `brief` namespace to find the most relevant brief
-4. Uses GPT-4 to evaluate the match
-
-The evaluation process uses carefully crafted prompts that:
-
-- Adapt questions based on submission type (text/image/video)
-- Include general evaluation criteria for all submissions
-- Generate structured feedback with specific corrections and highlights
-- Provide a clear ACCEPT/REJECT decision
-
-Why Vector Search?
-Converting content (briefs and submissions) into vectors enables:
-
-- Efficient semantic matching without keyword limitations
-- Instant retrieval from thousands of briefs
-- Consistent evaluation across different content types
-- Easy scaling as the number of briefs and submissions grows
+## Getting Started
 
 ### Prerequisites
 
+- Node.js 18+
 - Python 3.8+
 - OpenAI API key
-- Pinecone API key
-- Required Python packages (see `requirements.txt`)
+- Pinecone API key and environment
+- uv (Python package installer)
 
 ### Environment Setup
 
-1. Clone the repository
-2. Create and activate a virtual environment:
+1. Clone the repository:
 
 ```bash
-# Create virtual environment
+git clone https://github.com/yourusername/faved_poc.git
+cd faved_poc
+```
+
+2. Set up the backend:
+
+```bash
+# Create and activate virtual environment
 python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
-# Activate virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-.\venv\Scripts\activate
+# Install dependencies using uv
+cd backend
+uv sync
+
+# Create .env file in project root
+echo "OPENAI_API_KEY=your_key_here
+PINECONE_API_KEY=your_key_here
+PINECONE_ENVIRONMENT=your_env_here" > ../.env
 ```
 
-3. Install required packages:
+3. Set up the frontend:
 
 ```bash
-pip install -r requirements.txt
+cd frontend
+npm install
 ```
 
-4. Create a `.env` file with your API keys:
+### Data Setup
 
-```
-OPENAI_API_KEY=your_openai_key
-PINECONE_API_KEY=your_pinecone_key
-PINECONE_ENVIRONMENT=your_pinecone_env
+The system requires brand briefs to be available in the `data/brief` directory. The initialization process handles:
+
+1. **Brief Summaries**: Automatically generates concise summaries of each brief
+2. **Evaluation Prompts**: Creates standardized evaluation questions based on brief content
+3. **Vector Store**: Initializes Pinecone with brief embeddings for semantic search
+
+The system will automatically:
+
+- Process briefs on first run
+- Generate required files in `data/summaries/`
+- Create evaluation prompts in `data/brief_prompt_questions.json`
+- Initialize the Pinecone vector store
+
+To reset the system:
+
+```bash
+# Remove generated files (if needed)
+rm -f data/summaries/briefs_summaries.txt data/summaries/briefs_summaries.json data/brief_prompt_questions.json
+
+# The system will regenerate everything on next startup
 ```
 
-### Directory Structure
+### Running the Application
+
+1. Start the backend server:
+
+```bash
+cd backend
+uvicorn main:app --reload
+```
+
+The backend will:
+
+- Check configuration status
+- Process briefs if needed (with progress indicators)
+- Initialize the vector store
+- Start the API server at http://localhost:8000
+
+2. Start the frontend development server:
+
+```bash
+cd frontend
+npm run dev
+```
+
+The web interface will be available at http://localhost:3000
+
+## Testing the API Endpoints
+
+You can test the API endpoints directly using the Swagger UI or curl:
+
+### Swagger UI
+
+Visit http://localhost:8000/docs for interactive API documentation and testing.
+
+### Example API Calls
+
+1. Text Evaluation:
+
+```bash
+curl -X POST http://localhost:8000/text \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Your content here"}'
+```
+
+2. Image Evaluation:
+
+```bash
+curl -X POST http://localhost:8000/image \
+  -H "Content-Type: application/json" \
+  -d '{"image_url": "https://your-milanote-board-url"}'
+```
+
+3. Video Evaluation:
+
+```bash
+curl -X POST http://localhost:8000/video \
+  -H "Content-Type: application/json" \
+  -d '{"youtube_url": "https://www.youtube.com/watch?v=example"}'
+```
+
+## Project Structure
 
 ```
 .
-├── data/
-│   ├── briefs/           # Brand brief text files
-│   ├── submissions/      # Test files for development
-│   ├── summaries/        # Generated brief summaries
-│   └── results/          # Evaluation results
-├── scripts/
-│   ├── generate_prompts.py
-│   ├── summarise_briefs.py
-│   ├── vectorstore.py
-│   ├── evaluate.py
-│   ├── evaluate_image.py
-│   ├── evaluate_video.py
-│   ├── evaluate_text.py
-│   └── delete_index.py   # Utility to delete Pinecone index
-└── requirements.txt
+├── frontend/               # Next.js frontend application
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   └── styles/       # Styled components
+│   └── package.json
+├── backend/               # FastAPI backend application
+│   ├── api/              # API routes and handlers
+│   ├── config.py         # Configuration management
+│   ├── main.py          # FastAPI application setup
+│   └── utils.py         # Shared utilities and initialization logic
+├── data/                 # Data directory
+│   ├── brief/           # Brand brief text files
+│   └── summaries/       # Generated summaries and embeddings
+└── requirements.txt      # Python dependencies
 ```
 
-### Usage
+## Core Application Flow
 
-### 1. Generate Prompts
+1. **Frontend**:
 
-```bash
-python scripts/generate_prompts.py
-```
+   - User selects submission type
+   - Enters content (text/image URL/video URL)
+   - Receives real-time feedback with engaging loading states
+   - Views structured evaluation results
 
-Generates evaluation questions based on brand briefs.
+2. **Backend**:
 
-### 2. Summarize Briefs
+   - Processes incoming submissions
+   - Generates appropriate embeddings
+   - Matches with relevant briefs
+   - Returns detailed evaluation in consistent JSON format
 
-```bash
-python scripts/summarise_briefs.py
-```
+3. **Evaluation Results**:
+   - Question-specific feedback
+   - Corrections and highlights
+   - Clear ACCEPT/REJECT decision
+   - Summary of key points
 
-Creates concise summaries of all brand briefs.
+## AI/ML Pipeline
 
-### 3. Evaluate Submissions
+The system uses a sophisticated AI pipeline for processing and evaluating submissions:
 
-#### Text Submissions
+1. **Brief Processing**:
 
-```bash
-python scripts/evaluate_text.py
-```
+   - Automatically summarizes brand briefs using GPT-4
+   - Generates embeddings for semantic matching
+   - Stores vectors in Pinecone for efficient retrieval
 
-Evaluates text-based submissions.
+2. **Evaluation System**:
 
-#### Image Submissions
+   - **Text Evaluation**: Uses GPT-4 for deep content analysis
+   - **Image Evaluation**: Combines CLIP for visual understanding with GPT-4 for analysis
+   - **Video Evaluation**: Processes YouTube transcripts and evaluates content context
 
-```bash
-python scripts/evaluate_image.py
-```
+3. **Matching System**:
 
-Evaluates Milanote board screenshots.
+   - Uses embeddings to find the most relevant brief for each submission
+   - Ensures evaluations are contextually appropriate
+   - Maintains semantic understanding across different content types
 
-#### Video Submissions
+4. **Prompt Generation**:
+   - Automatically generates evaluation questions from briefs
+   - Categories: script, video, image, and general
+   - Ensures consistent evaluation criteria across submissions
 
-```bash
-python scripts/evaluate_video.py
-```
+## Backend Architecture
 
-Evaluates YouTube video submissions.
+The backend system is built with FastAPI and follows a modular architecture:
 
-### 4. Delete Index
+1. **Initialization Process**:
 
-If you need to reset or remove the Pinecone index:
+   - Checks for required directories and files
+   - Processes briefs and generates summaries if needed
+   - Creates evaluation prompts automatically
+   - Initializes vector store with brief embeddings
 
-```bash
-python scripts/delete_index.py
-```
+2. **API Endpoints**:
 
-This will delete the `influencer-submission` index and all its namespaces.
+   - `/text`: Evaluates text submissions against matching briefs
+   - `/image`: Processes Milanote boards using CLIP and GPT-4
+   - `/video`: Handles YouTube video analysis with transcript processing
+   - `/test/init`: Monitors system initialization status
 
-### Output Format
+3. **Data Management**:
 
-Evaluation results are saved in JSON format with:
+   - Maintains brief summaries in both JSON and text formats
+   - Stores evaluation prompts in structured JSON
+   - Uses Pinecone for vector similarity search
+   - Handles concurrent processing of submissions
 
-- Question-specific feedback
-- Corrections needed
-- What went well
-- Final decision (ACCEPT/REJECT)
+4. **Error Handling**:
+   - Graceful degradation if services are unavailable
+   - Detailed error messages for debugging
+   - Automatic retry mechanisms for API calls
 
-### License
+## License
 
 MIT License
 
-### Author
+## Author
 
 Zahara Miriam
