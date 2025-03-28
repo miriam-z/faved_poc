@@ -9,6 +9,8 @@ load_dotenv()
 # Base paths
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / "data"
+BRIEF_PROMPT_PATH = DATA_DIR / "brief_prompt_questions.json"
+
 
 # API keys and environment
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

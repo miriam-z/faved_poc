@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import evaluate_text, evaluate_video, evaluate_image
 from config import print_config_status
+import uvicorn
 
 app = FastAPI(
     title="Influencer Submission Evaluator",
@@ -30,3 +31,7 @@ app.include_router(evaluate_video.router, prefix="/video", tags=["Video Evaluati
 @app.get("/")
 def root():
     return {"status": "running", "version": "0.1"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
