@@ -28,6 +28,8 @@ import {
   ErrorContainer,
   ErrorTitle,
   ErrorDetails,
+  LeftColumn,
+  ResultsContainer,
 } from './styles'
 
 type SubmissionType = 'text' | 'image' | 'video'
@@ -185,88 +187,88 @@ export default function SubmissionForm() {
 
   return (
     <FormContainer>
-      <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label htmlFor="type">Submission Type</Label>
-          <Select
-            id="type"
-            value={type}
-            onChange={handleTypeChange}
-          >
-            <option value="text">Text</option>
-            <option value="image">Image URL</option>
-            <option value="video">YouTube Video</option>
-          </Select>
-        </FormGroup>
-
-        {type === 'text' && (
+      {loading && (
+        <LoadingOverlay>
+          <LoadingSpinner />
+          <LoadingText>{loadingMessage}</LoadingText>
+        </LoadingOverlay>
+      )}
+      
+      <LeftColumn>
+        <Form onSubmit={handleSubmit}>
           <FormGroup>
-            <Label htmlFor="text">Text Content</Label>
-            <TextArea
-              id="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Enter your text submission..."
-              required
-            />
+            <Label htmlFor="type">Submission Type</Label>
+            <Select
+              id="type"
+              value={type}
+              onChange={handleTypeChange}
+            >
+              <option value="text">Text</option>
+              <option value="image">Image URL</option>
+              <option value="video">YouTube Video</option>
+            </Select>
           </FormGroup>
-        )}
 
-        {type === 'image' && (
-          <FormGroup>
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="Enter image URL..."
-              required
-            />
-          </FormGroup>
-        )}
+          {type === 'text' && (
+            <FormGroup>
+              <Label htmlFor="text">Text Content</Label>
+              <TextArea
+                id="text"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Enter your text submission..."
+                required
+              />
+            </FormGroup>
+          )}
 
-        {type === 'video' && (
-          <FormGroup>
-            <Label htmlFor="videoUrl">YouTube URL</Label>
-            <Input
-              id="videoUrl"
-              type="url"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="Enter YouTube video URL..."
-              required
-            />
-          </FormGroup>
-        )}
+          {type === 'image' && (
+            <FormGroup>
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="Enter image URL..."
+                required
+              />
+            </FormGroup>
+          )}
 
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Evaluating...' : 'Submit for Evaluation'}
-        </Button>
+          {type === 'video' && (
+            <FormGroup>
+              <Label htmlFor="videoUrl">YouTube URL</Label>
+              <Input
+                id="videoUrl"
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="Enter YouTube video URL..."
+                required
+              />
+            </FormGroup>
+          )}
 
-        {loading && (
-          <LoadingOverlay>
-            <LoadingSpinner />
-            <LoadingText>{loadingMessage}</LoadingText>
-          </LoadingOverlay>
-        )}
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Evaluating...' : 'Submit for Evaluation'}
+          </Button>
 
-        {error && (
-          <ErrorContainer>
-            <ErrorTitle>Error</ErrorTitle>
-            <ErrorMessage>{error}</ErrorMessage>
-            {errorDetails && <ErrorDetails>{errorDetails}</ErrorDetails>}
-          </ErrorContainer>
-        )}
+          {error && (
+            <ErrorContainer>
+              <ErrorTitle>Error</ErrorTitle>
+              <ErrorMessage>{error}</ErrorMessage>
+              {errorDetails && <ErrorDetails>{errorDetails}</ErrorDetails>}
+            </ErrorContainer>
+          )}
+        </Form>
 
         {response && (
-          <EvaluationResults>
+          <ResultsContainer>
             <ResultsTitle>Evaluation Results</ResultsTitle>
-            
             <Decision decision={response.evaluation.summary.decision}>
               {response.evaluation.summary.decision}
             </Decision>
-
             <SummarySection>
               <SummaryTitle>Summary</SummaryTitle>
               <FeedbackItem>
@@ -278,25 +280,29 @@ export default function SubmissionForm() {
                 <SummaryText>{response.evaluation.summary.what_went_well}</SummaryText>
               </FeedbackItem>
             </SummarySection>
-
-            <QuestionList>
-              {response.evaluation.questions.map((q, index) => (
-                <QuestionItem key={index}>
-                  <QuestionText>{q.question}</QuestionText>
-                  <FeedbackItem>
-                    <FeedbackLabel>Corrections:</FeedbackLabel>
-                    <SummaryText>{q.corrections}</SummaryText>
-                  </FeedbackItem>
-                  <FeedbackItem>
-                    <FeedbackLabel>What went well:</FeedbackLabel>
-                    <SummaryText>{q.what_went_well}</SummaryText>
-                  </FeedbackItem>
-                </QuestionItem>
-              ))}
-            </QuestionList>
-          </EvaluationResults>
+          </ResultsContainer>
         )}
-      </Form>
+      </LeftColumn>
+
+      {response && (
+        <EvaluationResults>
+          <QuestionList>
+            {response.evaluation.questions.map((q, index) => (
+              <QuestionItem key={index}>
+                <QuestionText>{q.question}</QuestionText>
+                <FeedbackItem>
+                  <FeedbackLabel>Corrections:</FeedbackLabel>
+                  <SummaryText>{q.corrections}</SummaryText>
+                </FeedbackItem>
+                <FeedbackItem>
+                  <FeedbackLabel>What went well:</FeedbackLabel>
+                  <SummaryText>{q.what_went_well}</SummaryText>
+                </FeedbackItem>
+              </QuestionItem>
+            ))}
+          </QuestionList>
+        </EvaluationResults>
+      )}
     </FormContainer>
   )
 } 

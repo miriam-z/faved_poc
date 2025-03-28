@@ -22,8 +22,9 @@ const Title = styled.h1`
 
 const Description = styled.p`
   color: #666;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
+  white-space: nowrap;
 `
 
 export default function Home() {
