@@ -12,6 +12,7 @@ dependencies = [
     "pillow==11.1.0",
     "pinecone==6.0.2",
     "playwright==1.51.0",
+    "pydantic>=2.0.0",
     "python-dotenv==1.0.1",
     "pytube==15.0.0",
     "regex==2024.11.6",
