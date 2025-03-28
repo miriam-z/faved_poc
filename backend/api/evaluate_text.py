@@ -9,14 +9,6 @@ import uuid
 
 router = APIRouter()
 
-# testing path: to be deleted start
-
-print(f"Prompt path: {BRIEF_PROMPT_PATH}")
-
-if not BRIEF_PROMPT_PATH.exists():
-    raise HTTPException(status_code=404, detail="Prompt questions file not found")
-# testing path: to be deleted end
-
 
 class TextSubmission(BaseModel):
     text: str
