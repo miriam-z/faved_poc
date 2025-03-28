@@ -16,7 +16,7 @@ print_config_status()
 # CORS config — allow frontend (Next.js) to communicate with the backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Update this for production domain
+    allow_origins=["http://localhost:3000"],  # Next.js development server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,7 +30,7 @@ app.include_router(evaluate_video.router, prefix="/video", tags=["Video Evaluati
 
 @app.get("/")
 def root():
-    return {"status": "running", "version": "0.1"}
+    return {"status": "running", "version": "0.1.0"}
 
 
 if __name__ == "__main__":
