@@ -287,22 +287,74 @@ async def evaluate_image_submission(submission: ImageSubmission):
                 # Get evaluation from GPT-4
                 client = OpenAI(api_key=OPENAI_API_KEY)
                 response = client.chat.completions.create(
-                    model="gpt-4-turbo",  # Using the same model as in scripts
+                    model="gpt-4-turbo-preview",  # Using the latest model
                     messages=[
                         {
                             "role": "system",
-                            "content": "You evaluate influencer submissions.",
+                            "content": "You are an AI that evaluates influencer image-based submissions. You MUST respond with valid JSON in the exact format specified. Do not include any additional text or formatting outside of the JSON structure.",
                         },
                         {"role": "user", "content": combined_prompt},
                     ],
-                    temperature=0.7,  # Add some variability in responses
-                    max_tokens=2000,  # Ensure enough tokens for detailed response
+                    temperature=0.2,  # Lower temperature for more consistent JSON formatting
+                    max_tokens=2000,
+                    response_format={"type": "json_object"},  # Enforce JSON response
                 )
 
-                evaluation = json.loads(response.choices[0].message.content)
-                print("Successfully generated evaluation")
-                return EvaluationResponse(evaluation=evaluation)
+                # Debug: Print raw response content
+                raw_content = response.choices[0].message.content
+                print("Raw GPT-4 response:")
+                print(raw_content)
+
+                if not raw_content or raw_content.isspace():
+                    raise HTTPException(
+                        status_code=500, detail="Received empty response from GPT-4"
+                    )
+
+                try:
+                    evaluation = json.loads(raw_content)
+
+                    # Validate response structure
+                    required_keys = {"questions", "summary"}
+                    if not all(key in evaluation for key in required_keys):
+                        raise ValueError(
+                            "Response missing required keys: questions and/or summary"
+                        )
+
+                    if not isinstance(evaluation["questions"], list):
+                        raise ValueError("'questions' must be a list")
+
+                    if not isinstance(evaluation["summary"], dict):
+                        raise ValueError("'summary' must be an object")
+
+                    required_summary_keys = {
+                        "corrections",
+                        "what_went_well",
+                        "decision",
+                    }
+                    if not all(
+                        key in evaluation["summary"] for key in required_summary_keys
+                    ):
+                        raise ValueError("Summary missing required keys")
+
+                    print("Successfully validated JSON response structure")
+                    return EvaluationResponse(evaluation=evaluation)
+
+                except json.JSONDecodeError as je:
+                    print(f"JSON parse error at position {je.pos}: {je.msg}")
+                    print(
+                        f"Content around error: {raw_content[max(0, je.pos-50):je.pos+50]}"
+                    )
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to parse GPT-4 response as JSON. Error: {str(je)}",
+                    )
+                except ValueError as ve:
+                    raise HTTPException(
+                        status_code=500, detail=f"Invalid response structure: {str(ve)}"
+                    )
+
             except Exception as e:
+                print(f"Error generating evaluation: {str(e)}")
                 raise HTTPException(
                     status_code=500, detail=f"Failed to generate evaluation: {str(e)}"
                 )
