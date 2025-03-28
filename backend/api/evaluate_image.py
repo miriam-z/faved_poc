@@ -1,55 +1,103 @@
 import os
 import json
 import uuid
+import re
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from openai import OpenAI
 from config import OPENAI_API_KEY, BRIEF_PROMPT_PATH
 from utils import init_pinecone, get_relevant_brief
 import torch
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import tempfile
+import datetime
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 router = APIRouter()
 
 # Initialize CLIP model and processor globally
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+try:
+    print("Initializing CLIP model and processor...")
+    clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    print("CLIP model initialized successfully")
+except Exception as e:
+    print(f"Error initializing CLIP model: {e}")
+    raise RuntimeError(f"Failed to initialize CLIP model: {e}")
 
 
 class ImageSubmission(BaseModel):
     image_url: str
+
+    @field_validator("image_url")
+    @classmethod
+    def validate_milanote_url(cls, v):
+        if not v.startswith("https://app.milanote.com/"):
+            raise ValueError("URL must be a valid Milanote board URL")
+        return v
 
 
 class EvaluationResponse(BaseModel):
     evaluation: dict
 
 
-def screenshot_milanote_board(board_url: str) -> str:
+async def screenshot_milanote_board(board_url: str) -> str:
     """Take a screenshot of a Milanote board and return the path to the temporary file."""
+    print(f"Capturing screenshot from: {board_url}")
     temp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            page = browser.new_page()
-            page.goto(board_url, wait_until="networkidle", timeout=60000)
-            page.screenshot(path=temp_file.name, full_page=True)
-            browser.close()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            # Set viewport size to ensure consistent capture
+            await page.set_viewport_size({"width": 1920, "height": 1080})
+            await page.goto(board_url, wait_until="networkidle", timeout=60000)
+            await page.screenshot(path=temp_file.name, full_page=True)
+            await browser.close()
+        print(f"Screenshot saved to: {temp_file.name}")
         return temp_file.name
     except Exception as e:
         if os.path.exists(temp_file.name):
             os.unlink(temp_file.name)
+        print(f"Screenshot error: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to capture screenshot: {str(e)}"
         )
 
 
+def validate_image(image_path: str) -> None:
+    """Validate image size and format."""
+    try:
+        with Image.open(image_path) as img:
+            # Check format
+            if img.format not in ["PNG", "JPEG", "JPG"]:
+                raise ValueError(f"Unsupported image format: {img.format}")
+
+            # Check dimensions
+            width, height = img.size
+            if width < 100 or height < 100:
+                raise ValueError(f"Image too small: {width}x{height}")
+            if width > 10000 or height > 10000:
+                raise ValueError(f"Image too large: {width}x{height}")
+
+            # Check file size
+            file_size = os.path.getsize(image_path) / (1024 * 1024)  # Size in MB
+            if file_size > 50:
+                raise ValueError(f"File too large: {file_size:.1f}MB")
+    except Exception as e:
+        raise ValueError(f"Image validation failed: {str(e)}")
+
+
 def get_image_embedding(image_path: str) -> list[float]:
     """Get CLIP embedding for an image."""
+    print("Generating image embedding...")
     try:
+        # Validate image before processing
+        validate_image(image_path)
+
         image = Image.open(image_path).convert("RGB")
         inputs = clip_processor(images=image, return_tensors="pt")
 
@@ -59,11 +107,15 @@ def get_image_embedding(image_path: str) -> list[float]:
         vector = embedding[0].tolist()
 
         # Pad to Pinecone dimension (1536)
-        return (
+        vector = (
             vector + [0.0] * (1536 - len(vector))
             if len(vector) < 1536
             else vector[:1536]
         )
+        print("Image embedding generated successfully")
+        return vector
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to process image: {str(e)}"
@@ -72,48 +124,118 @@ def get_image_embedding(image_path: str) -> list[float]:
 
 @router.post("/", response_model=EvaluationResponse)
 async def evaluate_image_submission(submission: ImageSubmission):
+    """Evaluate an image submission from a Milanote board.
+
+    Args:
+        submission: ImageSubmission object containing the Milanote board URL
+
+    Returns:
+        EvaluationResponse containing the evaluation results
+
+    Raises:
+        HTTPException: If any step in the evaluation process fails
+    """
+    temp_image_path = None
     try:
+        print(f"Starting evaluation for submission: {submission.image_url}")
+
         # Take screenshot of Milanote board
-        temp_image_path = screenshot_milanote_board(submission.image_url)
+        try:
+            temp_image_path = await screenshot_milanote_board(submission.image_url)
+            print(f"Successfully captured screenshot: {temp_image_path}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to capture Milanote board: {str(e)}"
+            )
 
         try:
             # Initialize Pinecone
             index = init_pinecone()
+            print("Successfully initialized Pinecone index")
 
             # Get image embedding
-            image_embedding = get_image_embedding(temp_image_path)
+            try:
+                image_embedding = get_image_embedding(temp_image_path)
+                print("Successfully generated image embedding")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to generate image embedding: {str(e)}",
+                )
 
             # Generate unique ID for the submission
             image_id = f"image_{uuid.uuid4().hex}"
+            print(f"Generated submission ID: {image_id}")
 
-            # Upsert to Pinecone
-            index.upsert(
-                namespace="image-submission",
-                vectors=[
-                    {
-                        "id": image_id,
-                        "values": image_embedding,
-                        "metadata": {"source": submission.image_url},
-                    }
-                ],
-            )
+            try:
+                # Upsert to Pinecone with timestamp and metadata
+                timestamp = datetime.datetime.now(datetime.UTC)
+                index.upsert(
+                    namespace="image-submission",
+                    vectors=[
+                        {
+                            "id": image_id,
+                            "values": image_embedding,
+                            "metadata": {
+                                "source": submission.image_url,
+                                "type": "milanote_board",
+                                "timestamp": str(timestamp),
+                                "submission_type": "image",
+                            },
+                        }
+                    ],
+                )
+                print(f"Successfully upserted image submission: {image_id}")
 
-            # Get relevant brief
-            most_relevant_brief = get_relevant_brief(index, image_embedding)
+                # Verify upsert by checking stats
+                stats = index.describe_index_stats()
+                print(f"Index stats after upsert: {stats}")
 
-            # Load prompt questions
-            prompt_path = Path(BRIEF_PROMPT_PATH)
-            if not prompt_path.exists():
+            except Exception as e:
                 raise HTTPException(
-                    status_code=404, detail="Prompt questions file not found"
+                    status_code=500,
+                    detail=f"Failed to upsert image submission: {str(e)}",
                 )
 
-            prompt_data = json.loads(prompt_path.read_text(encoding="utf-8"))
-            prompts = (
-                prompt_data
-                if isinstance(prompt_data, list)
-                else prompt_data.get("prompts", [])
-            )
+            try:
+                # Get relevant brief
+                most_relevant_brief = get_relevant_brief(index, image_embedding)
+                if not most_relevant_brief:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="No matching brief found for the submission",
+                    )
+                print("Successfully retrieved relevant brief")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to retrieve relevant brief: {str(e)}",
+                )
+
+            # Load and validate prompt questions
+            try:
+                prompt_path = Path(BRIEF_PROMPT_PATH)
+                if not prompt_path.exists():
+                    raise HTTPException(
+                        status_code=404, detail="Prompt questions file not found"
+                    )
+
+                prompt_data = json.loads(prompt_path.read_text(encoding="utf-8"))
+                prompts = (
+                    prompt_data
+                    if isinstance(prompt_data, list)
+                    else prompt_data.get("prompts", [])
+                )
+
+                if not prompts:
+                    raise HTTPException(
+                        status_code=500, detail="No evaluation prompts found"
+                    )
+                print("Successfully loaded prompt questions")
+            except json.JSONDecodeError:
+                raise HTTPException(
+                    status_code=500, detail="Failed to parse prompt questions file"
+                )
 
             # Filter relevant prompts
             submission_type = "image"
@@ -122,7 +244,14 @@ async def evaluate_image_submission(submission: ImageSubmission):
                 for p in prompts
                 if p.get("type") in [submission_type, "general", "image"]
             ]
+            if not relevant_prompts:
+                raise HTTPException(
+                    status_code=500,
+                    detail="No relevant prompts found for image submission",
+                )
+
             selected_prompts = relevant_prompts[:3]
+            print(f"Selected {len(selected_prompts)} relevant prompts")
 
             prompt_blocks = "\n".join(
                 [
@@ -153,30 +282,47 @@ async def evaluate_image_submission(submission: ImageSubmission):
                 f"Questions:\n{prompt_blocks}\n"
             )
 
-            # Get evaluation from GPT-4
-            client = OpenAI(api_key=OPENAI_API_KEY)
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You evaluate influencer submissions.",
-                    },
-                    {"role": "user", "content": combined_prompt},
-                ],
-            )
+            print("Getting evaluation from GPT-4...")
+            try:
+                # Get evaluation from GPT-4
+                client = OpenAI(api_key=OPENAI_API_KEY)
+                response = client.chat.completions.create(
+                    model="gpt-4-turbo",  # Using the same model as in scripts
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You evaluate influencer submissions.",
+                        },
+                        {"role": "user", "content": combined_prompt},
+                    ],
+                    temperature=0.7,  # Add some variability in responses
+                    max_tokens=2000,  # Ensure enough tokens for detailed response
+                )
 
-            evaluation = json.loads(response.choices[0].message.content)
-            return EvaluationResponse(evaluation=evaluation)
+                evaluation = json.loads(response.choices[0].message.content)
+                print("Successfully generated evaluation")
+                return EvaluationResponse(evaluation=evaluation)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500, detail=f"Failed to generate evaluation: {str(e)}"
+                )
 
         finally:
             # Clean up temporary file
-            if os.path.exists(temp_image_path):
-                os.unlink(temp_image_path)
+            if temp_image_path and os.path.exists(temp_image_path):
+                try:
+                    os.unlink(temp_image_path)
+                    print(f"Cleaned up temporary file: {temp_image_path}")
+                except Exception as e:
+                    print(f"Warning: Failed to clean up temporary file: {e}")
 
     except json.JSONDecodeError:
         raise HTTPException(
             status_code=500, detail="Failed to parse evaluation response"
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions as is
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500, detail=f"Unexpected error during evaluation: {str(e)}"
+        )
