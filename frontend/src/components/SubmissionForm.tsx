@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   FormContainer,
   Form,
@@ -11,7 +11,23 @@ import {
   Button,
   Select,
   ErrorMessage,
-  SuccessMessage,
+  EvaluationResults,
+  ResultsTitle,
+  Decision,
+  SummarySection,
+  SummaryTitle,
+  SummaryText,
+  QuestionList,
+  QuestionItem,
+  QuestionText,
+  FeedbackItem,
+  FeedbackLabel,
+  LoadingOverlay,
+  LoadingSpinner,
+  LoadingText,
+  ErrorContainer,
+  ErrorTitle,
+  ErrorDetails,
 } from './styles'
 
 type SubmissionType = 'text' | 'image' | 'video'
@@ -38,13 +54,20 @@ export default function SubmissionForm() {
   const [videoUrl, setVideoUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [errorDetails, setErrorDetails] = useState('')
   const [response, setResponse] = useState<SubmissionResponse | null>(null)
+
+  const resetForm = () => {
+    setText('')
+    setImageUrl('')
+    setVideoUrl('')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
-    setResponse(null)
+    setErrorDetails('')
 
     try {
       let endpoint = ''
@@ -65,6 +88,9 @@ export default function SubmissionForm() {
           break
       }
 
+      console.log('Sending request to:', endpoint)
+      console.log('Payload:', payload)
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -73,19 +99,89 @@ export default function SubmissionForm() {
         body: JSON.stringify(payload),
       })
 
+      const data = await res.json()
+
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.detail || 'Failed to evaluate submission')
+        console.error('Error response:', data)
+        throw new Error(data.detail || 'Failed to evaluate submission')
       }
 
-      const data = await res.json()
+      if (!data || !data.evaluation) {
+        console.error('Invalid response format:', data)
+        throw new Error('Invalid response format from server')
+      }
+
+      console.log('Success response:', data)
       setResponse(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Error:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      if (err instanceof Error) {
+        setErrorDetails(err.stack || '')
+      }
     } finally {
       setLoading(false)
     }
   }
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value as SubmissionType
+    setType(newType)
+    setError('')
+    setErrorDetails('')
+    resetForm()
+  }
+
+  const getLoadingMessage = () => {
+    const textMessages = [
+      "Analyzing your words with AI magic... ✨",
+      "Reading between the lines... 📝",
+      "Consulting with the digital experts... 🤖",
+      "Brewing up some insights... ☕️",
+      "Making your content shine... ✨",
+    ]
+
+    const imageMessages = [
+      "Analyzing your masterpiece... 🎨",
+      "Looking at every pixel... 🔍",
+      "Finding the visual story... 📸",
+      "Decoding your creative vision... 🎯",
+      "Extracting the visual magic... ✨",
+    ]
+
+    const videoMessages = [
+      "Watching your video with AI eyes... 👀",
+      "Analyzing every frame... 🎬",
+      "Finding the perfect moments... 🎥",
+      "Processing your creative genius... 🌟",
+      "Extracting video insights... 📊",
+    ]
+
+    // Get random message based on type
+    const messages = type === 'text' 
+      ? textMessages 
+      : type === 'image' 
+        ? imageMessages 
+        : videoMessages
+
+    const randomIndex = Math.floor(Math.random() * messages.length)
+    return messages[randomIndex]
+  }
+
+  // Add state for cycling through messages
+  const [loadingMessage, setLoadingMessage] = useState('')
+
+  // Update useEffect to cycle through messages
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setLoadingMessage(getLoadingMessage())
+      }, 2000) // Change message every 2 seconds
+
+      setLoadingMessage(getLoadingMessage()) // Set initial message
+      return () => clearInterval(interval)
+    }
+  }, [loading, type])
 
   return (
     <FormContainer>
@@ -95,7 +191,7 @@ export default function SubmissionForm() {
           <Select
             id="type"
             value={type}
-            onChange={(e) => setType(e.target.value as SubmissionType)}
+            onChange={handleTypeChange}
           >
             <option value="text">Text</option>
             <option value="image">Image URL</option>
@@ -148,15 +244,57 @@ export default function SubmissionForm() {
           {loading ? 'Evaluating...' : 'Submit for Evaluation'}
         </Button>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {loading && (
+          <LoadingOverlay>
+            <LoadingSpinner />
+            <LoadingText>{loadingMessage}</LoadingText>
+          </LoadingOverlay>
+        )}
+
+        {error && (
+          <ErrorContainer>
+            <ErrorTitle>Error</ErrorTitle>
+            <ErrorMessage>{error}</ErrorMessage>
+            {errorDetails && <ErrorDetails>{errorDetails}</ErrorDetails>}
+          </ErrorContainer>
+        )}
 
         {response && (
-          <SuccessMessage>
-            <h3>Evaluation Results:</h3>
-            <p>Decision: {response.evaluation.summary.decision}</p>
-            <p>Corrections: {response.evaluation.summary.corrections}</p>
-            <p>What went well: {response.evaluation.summary.what_went_well}</p>
-          </SuccessMessage>
+          <EvaluationResults>
+            <ResultsTitle>Evaluation Results</ResultsTitle>
+            
+            <Decision decision={response.evaluation.summary.decision}>
+              {response.evaluation.summary.decision}
+            </Decision>
+
+            <SummarySection>
+              <SummaryTitle>Summary</SummaryTitle>
+              <FeedbackItem>
+                <FeedbackLabel>Corrections:</FeedbackLabel>
+                <SummaryText>{response.evaluation.summary.corrections}</SummaryText>
+              </FeedbackItem>
+              <FeedbackItem>
+                <FeedbackLabel>What went well:</FeedbackLabel>
+                <SummaryText>{response.evaluation.summary.what_went_well}</SummaryText>
+              </FeedbackItem>
+            </SummarySection>
+
+            <QuestionList>
+              {response.evaluation.questions.map((q, index) => (
+                <QuestionItem key={index}>
+                  <QuestionText>{q.question}</QuestionText>
+                  <FeedbackItem>
+                    <FeedbackLabel>Corrections:</FeedbackLabel>
+                    <SummaryText>{q.corrections}</SummaryText>
+                  </FeedbackItem>
+                  <FeedbackItem>
+                    <FeedbackLabel>What went well:</FeedbackLabel>
+                    <SummaryText>{q.what_went_well}</SummaryText>
+                  </FeedbackItem>
+                </QuestionItem>
+              ))}
+            </QuestionList>
+          </EvaluationResults>
         )}
       </Form>
     </FormContainer>
