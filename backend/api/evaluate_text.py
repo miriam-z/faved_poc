@@ -5,6 +5,7 @@ from config import OPENAI_API_KEY, BRIEF_PROMPT_PATH
 from utils import init_pinecone, get_embedding, get_relevant_brief
 import json
 from pathlib import Path
+import uuid
 
 router = APIRouter()
 
@@ -34,26 +35,41 @@ async def evaluate_text_submission(submission: TextSubmission):
         # Get embedding for submission text
         submission_embedding = get_embedding(submission.text)
 
-        # Upsert submission to Pinecone
-        submission_id = "text_submission"  # You might want to generate a unique ID
-        index.upsert(
-            namespace="text-submission",
-            vectors=[
-                {
-                    "id": submission_id,
-                    "values": submission_embedding,
-                    "metadata": {"chunk_text": submission.text, "source": "submission"},
-                }
-            ],
-        )
+        # Generate unique ID for submission
+        submission_id = f"text_{uuid.uuid4().hex}"
+        print(f"Upserting text submission with ID: {submission_id}")
+
+        try:
+            # Upsert submission to Pinecone
+            index.upsert(
+                namespace="text-submission",
+                vectors=[
+                    {
+                        "id": submission_id,
+                        "values": submission_embedding,
+                        "metadata": {
+                            "chunk_text": submission.text,
+                            "source": "submission",
+                        },
+                    }
+                ],
+            )
+            print(f"Successfully upserted text submission: {submission_id}")
+
+            # Verify upsert by checking stats
+            stats = index.describe_index_stats()
+            print(f"Index stats after upsert: {stats}")
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to upsert text submission: {str(e)}"
+            )
 
         # Get relevant brief
         most_relevant_brief = get_relevant_brief(index, submission_embedding)
 
         # Load prompt questions
-        # prompt_path = Path("data/brief_prompt_questions.json")
         prompt_path = Path(BRIEF_PROMPT_PATH)
-
         if not prompt_path.exists():
             raise HTTPException(
                 status_code=404, detail="Prompt questions file not found"
