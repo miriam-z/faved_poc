@@ -1,0 +1,9 @@
+"60-second integration discussing Milanote directly + 2 minutes of screen time in addition to that.
+
+I'm currently co-writing a novel called Cabin 5. The co-author and I are working on a YouTube series where we document the full behind-the-scenes process of writing the book. Here's a link to our first video: https://www.youtube.com/watch?v=k-DpeBBNPiQ
+
+The Milanote integration would be included in our third behind-the-scenes video. As for the use case, I'm planning for the co-author and I to build a Milanote board together for the book, which will be featured in the video as supporting graphics for our ideas.
+
+The co-author and I plan to use Milanote in the video as we brainstorm the book’s worldbuilding together, so the user interface would be shown throughout the video.
+
+Essentially, we would show how we use Milanote for a good chunk of the video, and break away for the 60-secon integrated ad."
