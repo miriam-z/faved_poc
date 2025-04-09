@@ -2,6 +2,10 @@
 
 A modern web application for evaluating influencer submissions against brand briefs using AI. The system provides instant feedback on text scripts, images, and YouTube videos using OpenAI's GPT-4 and CLIP models.
 
+Here's a visual of how the AI Tools Knowledge Hub looks:
+
+[Influencer Submission Evaluator](public/ui.png)
+
 ## Core Features
 
 - **Modern Web Interface**: Clean, responsive UI built with Next.js and styled-components
