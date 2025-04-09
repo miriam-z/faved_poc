@@ -4,7 +4,7 @@ A modern web application for evaluating influencer submissions against brand bri
 
 Here's a visual of how the AI Tools Knowledge Hub looks:
 
-[Influencer Submission Evaluator](public/ui.png)
+[Influencer Submission Evaluator](ui.png)
 
 ## Core Features
 
