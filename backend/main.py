@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from api import evaluate_text, evaluate_video, evaluate_image
 from config import print_config_status, DATA_DIR, BRIEF_PROMPT_PATH
@@ -19,6 +20,7 @@ app = FastAPI(
     description="API for evaluating influencer submissions against brand briefs",
     version="0.1.0",
 )
+
 
 # CORS config — allow frontend (Next.js) to communicate with the backend
 app.add_middleware(
@@ -66,5 +68,7 @@ def test_initialization():
     return {"status": "ok", "initialization_status": status}
 
 
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="debug")
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

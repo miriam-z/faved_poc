@@ -54,6 +54,7 @@ export default function SubmissionForm() {
   const [text, setText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
+  const [videoFile, setVideoFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [errorDetails, setErrorDetails] = useState('')
@@ -63,6 +64,7 @@ export default function SubmissionForm() {
     setText('')
     setImageUrl('')
     setVideoUrl('')
+    setVideoFile(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,32 +75,30 @@ export default function SubmissionForm() {
 
     try {
       let endpoint = ''
-      let payload = {}
+      const formData = new FormData()
 
       switch (type) {
         case 'text':
           endpoint = 'http://localhost:8000/text'
-          payload = { text }
+          formData.append('text', text)
           break
         case 'image':
           endpoint = 'http://localhost:8000/image'
-          payload = { image_url: imageUrl }
+          formData.append('image_url', imageUrl)
           break
         case 'video':
           endpoint = 'http://localhost:8000/video'
-          payload = { youtube_url: videoUrl }
+          if (videoFile) {
+            formData.append('file', videoFile)
+          }
           break
       }
 
       console.log('Sending request to:', endpoint)
-      console.log('Payload:', payload)
 
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        body: formData,
       })
 
       const data = await res.json()
@@ -160,10 +160,10 @@ export default function SubmissionForm() {
     ]
 
     // Get random message based on type
-    const messages = type === 'text' 
-      ? textMessages 
-      : type === 'image' 
-        ? imageMessages 
+    const messages = type === 'text'
+      ? textMessages
+      : type === 'image'
+        ? imageMessages
         : videoMessages
 
     const randomIndex = Math.floor(Math.random() * messages.length)
@@ -193,7 +193,7 @@ export default function SubmissionForm() {
           <LoadingText>{loadingMessage}</LoadingText>
         </LoadingOverlay>
       )}
-      
+
       <LeftColumn>
         <Form onSubmit={handleSubmit}>
           <FormGroup>
@@ -205,7 +205,7 @@ export default function SubmissionForm() {
             >
               <option value="text">Text</option>
               <option value="image">Image URL</option>
-              <option value="video">YouTube Video</option>
+              <option value="video">Video File</option>
             </Select>
           </FormGroup>
 
@@ -238,13 +238,17 @@ export default function SubmissionForm() {
 
           {type === 'video' && (
             <FormGroup>
-              <Label htmlFor="videoUrl">YouTube URL</Label>
+              <Label htmlFor="videoFile">Video File</Label>
               <Input
-                id="videoUrl"
-                type="url"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="Enter YouTube video URL..."
+                id="videoFile"
+                type="file"
+                accept=".mp4, .mp3, .mov"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setVideoFile(e.target.files[0]);
+                  }
+                }}
+                placeholder="Upload a video file..."
                 required
               />
             </FormGroup>

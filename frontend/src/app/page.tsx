@@ -33,7 +33,7 @@ export default function Home() {
       <Header>
         <Title>Influencer Submission Evaluator</Title>
         <Description>
-          Submit your content for evaluation. We support text, image URLs, and YouTube video links.
+          Submit your content for evaluation. We support text, image URLs, and Video files.
         </Description>
       </Header>
       <SubmissionForm />
