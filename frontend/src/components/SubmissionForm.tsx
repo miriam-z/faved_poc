@@ -31,6 +31,7 @@ import {
   LeftColumn,
   ResultsContainer,
 } from './styles'
+import styled from 'styled-components'
 
 type SubmissionType = 'text' | 'image' | 'video'
 
@@ -49,12 +50,33 @@ interface SubmissionResponse {
   }
 }
 
+const FileInput = styled.input`
+  display: none;
+`;
+
+const FileLabel = styled.label`
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #ccc; /* Gray color */
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%; /* Match width to submit button */
+  text-align: center;
+
+  &:hover {
+    background-color: #bbb; /* Slightly darker gray on hover */
+  }
+`;
+
 export default function SubmissionForm() {
   const [type, setType] = useState<SubmissionType>('text')
   const [text, setText] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [videoUrl, setVideoUrl] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [fileName, setFileName] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [errorDetails, setErrorDetails] = useState('')
@@ -65,6 +87,7 @@ export default function SubmissionForm() {
     setImageUrl('')
     setVideoUrl('')
     setVideoFile(null)
+    setFileName('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -239,18 +262,19 @@ export default function SubmissionForm() {
           {type === 'video' && (
             <FormGroup>
               <Label htmlFor="videoFile">Video File</Label>
-              <Input
+              <FileInput
                 id="videoFile"
                 type="file"
                 accept=".mp4, .mp3, .mov"
                 onChange={(e) => {
                   if (e.target.files && e.target.files.length > 0) {
                     setVideoFile(e.target.files[0]);
+                    setFileName(e.target.files[0].name);
                   }
                 }}
-                placeholder="Upload a video file..."
-                required
               />
+              <FileLabel htmlFor="videoFile">Choose File</FileLabel>
+              {fileName && <span>{fileName}</span>}
             </FormGroup>
           )}
 
